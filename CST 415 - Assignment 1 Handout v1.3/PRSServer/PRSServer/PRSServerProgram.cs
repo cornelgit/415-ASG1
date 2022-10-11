@@ -38,10 +38,9 @@ namespace PRSServer
 
                 public bool Expired(int timeout)
                 {
-                    // TODO: PortReservation.Expired()
-                    // return true if timeout secons have elapsed since lastAlive
-
-                    return false;
+                    // return true if timeout seconds have elapsed since lastAlive
+                    // Know: lastAlive, DateTime.Now, timeout
+                    return (DateTime.Now - lastAlive).TotalSeconds > timeout;
                 }
 
                 public void Reserve(string serviceName)
@@ -105,11 +104,30 @@ namespace PRSServer
                 return null;
             }
 
+            private PortReservation FindPort(string name)
+            {
+                //find the port # that is reserved by given name
+                foreach (PortReservation reservation in ports)
+                {
+                    if (!reservation.Available && reservation.ServiceName == name)
+                    {
+                        return reservation;
+                    }
+                }
+
+                return null;
+            }
+
             private void CheckForExpiredPorts()
             {
-                // TODO: PRS.CheckForExpiredPorts()
-                // expire any ports that have not been kept alive
-
+                // expire any reserved ports that have not been kept alive, within the timeout range
+                foreach (PortReservation reservation in ports)
+                {
+                    if (!reservation.Available && reservation.Expired(keepAliveTimeout))
+                    {
+                        reservation.Close();
+                    }
+                }
             }
 
             private PRSMessage RequestPort(string serviceName)
@@ -205,15 +223,27 @@ namespace PRSServer
                         {
                             // client wants to know the reserved port number for a named service
                             // find the port
-                            // if found, send port number back
+                            PortReservation reservation = FindPort(msg.ServiceName);
+
+                            // if found, send the corresponding port number and SUCCESS
+                            if (reservation != null)
+                            {
+                                response = new PRSMessage(PRSMessage.MESSAGE_TYPE.RESPONSE, msg.ServiceName, reservation.Port, PRSMessage.STATUS.SUCCESS);
+                            }
                             // else, SERVICE_NOT_FOUND
+                            else
+                            {
+                                response = new PRSMessage(PRSMessage.MESSAGE_TYPE.RESPONSE, msg.ServiceName, msg.Port, PRSMessage.STATUS.SERVICE_NOT_FOUND);
+                            }                            
                         }
                         break;
 
                     case PRSMessage.MESSAGE_TYPE.STOP:
                         {
-                            // client is telling us to close the appliation down
+                            // client is telling us to close the application down
                             // stop the PRS and return SUCCESS
+                            stopped = true;
+                            response = new PRSMessage(PRSMessage.MESSAGE_TYPE.RESPONSE, "", 0, PRSMessage.STATUS.SUCCESS);
                         }
                         break;
                 }
@@ -246,7 +276,81 @@ namespace PRSServer
             // -e < ending client port number >
             // -t < keep alive time in seconds >
 
+            try
+            {
+
+                for (int i = 0; i < args.Length; i++)
+                {
+                    if (args[i] == "-p")
+                    {
+                        if (i+1 < args.Length)
+                        {
+                            SERVER_PORT = ushort.Parse(args[++i]);
+                        }
+                        else
+                        {
+                            throw new Exception("-p requires a value!");
+                        }                        
+                    }
+                    else if (args[i] == "-s")
+                    {
+                        if (i + 1 < args.Length)
+                        {
+                            SERVER_PORT = ushort.Parse(args[++i]);
+                        }
+                        else
+                        {
+                            throw new Exception("-s requires a value!");
+                        }
+                    }
+                    else if (args[i] == "-e")
+                    {
+                        if (i + 1 < args.Length)
+                        {
+                            SERVER_PORT = ushort.Parse(args[++i]);
+                        }
+                        else
+                        {
+                            throw new Exception("-e requires a value!");
+                        }
+                    }
+                    else if (args[i] == "-t")
+                    {
+                        if (i + 1 < args.Length)
+                        {
+                            SERVER_PORT = ushort.Parse(args[++i]);
+                        }
+                        else
+                        {
+                            throw new Exception("-t requires a value!");
+                        }
+                    }
+                    else
+                    {
+                        // error! unexpected cmd line arg
+                        throw new Exception("Invalid cmd line arg: " + args[i]);
+                    }
+                }
+            }
+
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error! "+ ex.Message);
+                return;
+            }
+
             // check for valid STARTING_CLIENT_PORT and ENDING_CLIENT_PORT
+            if (STARTING_CLIENT_PORT > ENDING_CLIENT_PORT)
+            {
+                Console.WriteLine("Error! Invalid client port range!");
+                return;
+            }
+
+            //print out the parameters
+            Console.WriteLine("SERVER_PORT=" + SERVER_PORT.ToString());
+            Console.WriteLine("STARTING_CLIENT_PORT=" + STARTING_CLIENT_PORT.ToString());
+            Console.WriteLine("ENDING_CLIENT_PORT=" + ENDING_CLIENT_PORT.ToString());
+            Console.WriteLine("KEEP_ALIVE_TIMEOUT=" + KEEP_ALIVE_TIMEOUT.ToString());
 
             // initialize the PRS server
             PRS prs = new PRS(STARTING_CLIENT_PORT, ENDING_CLIENT_PORT, KEEP_ALIVE_TIMEOUT);
