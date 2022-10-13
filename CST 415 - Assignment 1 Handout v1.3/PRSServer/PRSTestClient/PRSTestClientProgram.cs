@@ -14,6 +14,7 @@ using System.Threading;
 using System.Net;
 using System.Net.Sockets;
 using PRSLib;
+using System.Text.RegularExpressions;
 
 namespace PRSTestClient
 {
@@ -21,8 +22,8 @@ namespace PRSTestClient
     {
         static void Usage()
         {
-            Console.WriteLine("usage: PRSTestClient [options]");
-            Console.WriteLine("\t-prs <serverIP>:<serverPort>");
+            Console.WriteLine("\nUsage: PRSTestClient [options]");
+            Console.WriteLine("\t-prs <serverIP>:<serverPort>\n");
         }
 
         static void Main(string[] args)
@@ -31,61 +32,40 @@ namespace PRSTestClient
             string SERVER_IP = "127.0.0.1";
             int SERVER_PORT = 30000;
 
-            // process command options
+            // print usage
+            Usage();
+
+            //// process command options
             try
             {
-
-                for (int i = 0; i < args.Length; i++)
+                if (args[0] == "-prs")
                 {
-                    if (args[i] == "-p")
+                    // X.X.X.X:X is minimum allowed for ip, colon, plus port length
+                    if (args[1].Length >= 9)
                     {
-                        if (i + 1 < args.Length)
+                        if (args[1].Contains(".") && args[1].Contains(":"))
                         {
-                            SERVER_PORT = ushort.Parse(args[++i]);
+                            SERVER_PORT = int.Parse(args[1].Substring(args[1].IndexOf(':') + 1)); //get port number from cmd line string arg
+
+                            //extract out ip address from string arg
+                            string input = args[1];
+                            string pattern = ":\\d{1,5}";
+                            SERVER_IP = Regex.Replace(input, pattern, "");
                         }
                         else
                         {
-                            throw new Exception("-p requires a value!");
-                        }
-                    }
-                    else if (args[i] == "-s")
-                    {
-                        if (i + 1 < args.Length)
-                        {
-                            SERVER_PORT = ushort.Parse(args[++i]);
-                        }
-                        else
-                        {
-                            throw new Exception("-s requires a value!");
-                        }
-                    }
-                    else if (args[i] == "-e")
-                    {
-                        if (i + 1 < args.Length)
-                        {
-                            SERVER_PORT = ushort.Parse(args[++i]);
-                        }
-                        else
-                        {
-                            throw new Exception("-e requires a value!");
-                        }
-                    }
-                    else if (args[i] == "-t")
-                    {
-                        if (i + 1 < args.Length)
-                        {
-                            SERVER_PORT = ushort.Parse(args[++i]);
-                        }
-                        else
-                        {
-                            throw new Exception("-t requires a value!");
+                            throw new Exception("IP and Port need to be the right format: X.X.X.X:X. Some periods and a colon are required.");
                         }
                     }
                     else
                     {
-                        // error! unexpected cmd line arg
-                        throw new Exception("Invalid cmd line arg: " + args[i]);
+                        throw new Exception("IP and Port combined length is too small. Expecting a proper format.");
                     }
+                }
+                else
+                {
+                    // error! unexpected cmd line arg
+                    throw new Exception("Invalid cmd line arg: " + args[0] + "\t" + "-prs option must be specified when using cmd line arg");
                 }
             }
 

@@ -255,11 +255,11 @@ namespace PRSServer
 
         static void Usage()
         {
-            Console.WriteLine("usage: PRSServer [options]");
+            Console.WriteLine("\nUsage: PRSServer [options]");
             Console.WriteLine("\t-p < service port >");
             Console.WriteLine("\t-s < starting client port number >");
             Console.WriteLine("\t-e < ending client port number >");
-            Console.WriteLine("\t-t < keep alive time in seconds >");
+            Console.WriteLine("\t-t < keep alive time in seconds >\n");
         }
 
         static void Main(string[] args)
@@ -268,13 +268,16 @@ namespace PRSServer
             ushort SERVER_PORT = 30000;
             ushort STARTING_CLIENT_PORT = 40000;
             ushort ENDING_CLIENT_PORT = 40099;
-            int KEEP_ALIVE_TIMEOUT = 300;
+            int KEEP_ALIVE_TIMEOUT = 10;
 
             // process command options
             // -p < service port >
             // -s < starting client port number >
             // -e < ending client port number >
             // -t < keep alive time in seconds >
+
+            // print usage
+            Usage();
 
             try
             {
@@ -350,7 +353,7 @@ namespace PRSServer
             Console.WriteLine("SERVER_PORT=" + SERVER_PORT.ToString());
             Console.WriteLine("STARTING_CLIENT_PORT=" + STARTING_CLIENT_PORT.ToString());
             Console.WriteLine("ENDING_CLIENT_PORT=" + ENDING_CLIENT_PORT.ToString());
-            Console.WriteLine("KEEP_ALIVE_TIMEOUT=" + KEEP_ALIVE_TIMEOUT.ToString());
+            Console.WriteLine("KEEP_ALIVE_TIMEOUT=" + KEEP_ALIVE_TIMEOUT.ToString() + "\n");
 
             // initialize the PRS server
             PRS prs = new PRS(STARTING_CLIENT_PORT, ENDING_CLIENT_PORT, KEEP_ALIVE_TIMEOUT);
